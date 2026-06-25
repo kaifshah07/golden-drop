@@ -1,15 +1,22 @@
 import { prisma } from "../../prisma/client";
 import { AppError } from "../../utils/AppError";
+import { CouponService } from "../coupon/coupon.service";
 
 export class OrderService {
-  // 🛒 CREATE ORDER (FROM CART)
-  static async createOrder(userId: number) {
+
+  // 🛒 CREATE ORDER (WITH COUPON SUPPORT)
+  static async createOrder(userId: number, data?: any) {
+
+    const couponCode = data?.couponCode;
+    const addressId = data?.addressId;
+
+    // 1. Get cart
     const cart = await prisma.cart.findUnique({
       where: { userId: BigInt(userId) },
       include: {
         items: {
           include: {
-            variant: true,
+            productVariant: true,
           },
         },
       },
@@ -19,49 +26,88 @@ export class OrderService {
       throw new AppError("Cart is empty", 400);
     }
 
-    // 🔥 STEP 1: Validate stock
+    if (!addressId) {
+      throw new AppError("Address is required", 400);
+    }
+
+    // 2. Validate stock
     for (const item of cart.items) {
-      if (item.variant.stock < item.quantity) {
+      if (item.productVariant.stock < item.quantity) {
         throw new AppError(
-          `Insufficient stock for SKU ${item.variant.sku}`,
+          `Insufficient stock for SKU ${item.productVariant.sku}`,
           400
         );
       }
     }
 
-    // 💰 STEP 2: Calculate total
-    let totalAmount = 0;
+    // 3. Calculate subtotal
+    let subtotal = 0;
 
     for (const item of cart.items) {
-      const price =
-        Number(item.variant.salePrice ?? item.variant.price);
+      const price = Number(
+        item.productVariant.salePrice ??
+        item.productVariant.price
+      );
 
-      totalAmount += price * item.quantity;
+      subtotal += price * item.quantity;
     }
 
-    // 📦 STEP 3: Create order
+    // 4. Coupon logic
+    let discount = 0;
+    let finalTotal = subtotal;
+
+    if (couponCode) {
+      const couponResult =
+        await CouponService.validateCoupon(
+          couponCode,
+          subtotal
+        );
+
+      discount = couponResult.discount;
+      finalTotal = couponResult.finalTotal;
+    }
+
+    // 5. Shipping (can upgrade later)
+    const shippingCharge = 0;
+
+    const totalAmount = finalTotal + shippingCharge;
+
+    // 6. Create order
     const order = await prisma.order.create({
       data: {
+        orderNumber: `ORD-${Date.now()}`,
         userId: BigInt(userId),
+        addressId: BigInt(addressId),
+
+        subtotal,
+        discount,
+        shippingCharge,
         totalAmount,
-        status: "PENDING",
+
+        paymentStatus: "PENDING",
+        orderStatus: "PENDING",
       },
     });
 
-    // 📦 STEP 4: Create order items
+    // 7. Create order items + decrease stock
     for (const item of cart.items) {
+      const price = Number(
+        item.productVariant.salePrice ??
+        item.productVariant.price
+      );
+
       await prisma.orderItem.create({
         data: {
           orderId: order.id,
-          variantId: item.variantId,
+          productVariantId: item.productVariantId,
           quantity: item.quantity,
-          price: Number(item.variant.salePrice ?? item.variant.price),
+          unitPrice: price,
+          totalPrice: price * item.quantity,
         },
       });
 
-      // 📉 STEP 5: Decrease stock
       await prisma.productVariant.update({
-        where: { id: item.variantId },
+        where: { id: item.productVariantId },
         data: {
           stock: {
             decrement: item.quantity,
@@ -70,7 +116,7 @@ export class OrderService {
       });
     }
 
-    // 🧹 STEP 6: Clear cart
+    // 8. Clear cart
     await prisma.cartItem.deleteMany({
       where: { cartId: cart.id },
     });
@@ -85,7 +131,7 @@ export class OrderService {
       include: {
         items: {
           include: {
-            variant: true,
+            productVariant: true,
           },
         },
       },
@@ -105,7 +151,7 @@ export class OrderService {
       include: {
         items: {
           include: {
-            variant: true,
+            productVariant: true,
           },
         },
       },
@@ -116,5 +162,72 @@ export class OrderService {
     }
 
     return order;
+  }
+
+  // 🔄 UPDATE ORDER STATUS
+  static async updateOrderStatus(orderId: number, status: any) {
+    const order = await prisma.order.findUnique({
+      where: {
+        id: BigInt(orderId),
+      },
+    });
+
+    if (!order) {
+      throw new AppError("Order not found", 404);
+    }
+
+    const allowedTransitions: any = {
+      PENDING: ["CONFIRMED", "CANCELLED"],
+      CONFIRMED: ["PROCESSING", "CANCELLED"],
+      PROCESSING: ["SHIPPED"],
+      SHIPPED: ["DELIVERED"],
+      DELIVERED: [],
+      CANCELLED: [],
+    };
+
+    if (!allowedTransitions[order.orderStatus]?.includes(status)) {
+      throw new AppError(
+        `Cannot move order from ${order.orderStatus} to ${status}`,
+        400
+      );
+    }
+
+    return prisma.order.update({
+      where: {
+        id: BigInt(orderId),
+      },
+      data: {
+        orderStatus: status,
+      },
+    });
+  }
+
+  // ❌ CANCEL ORDER
+  static async cancelOrder(orderId: number) {
+    const order = await prisma.order.findUnique({
+      where: {
+        id: BigInt(orderId),
+      },
+    });
+
+    if (!order) {
+      throw new AppError("Order not found", 404);
+    }
+
+    if (
+      order.orderStatus === "SHIPPED" ||
+      order.orderStatus === "DELIVERED"
+    ) {
+      throw new AppError("Order cannot be cancelled", 400);
+    }
+
+    return prisma.order.update({
+      where: {
+        id: BigInt(orderId),
+      },
+      data: {
+        orderStatus: "CANCELLED",
+      },
+    });
   }
 }

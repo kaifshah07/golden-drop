@@ -7,8 +7,10 @@ import {
 } from "./auth.utils";
 import { env } from "../../config/env";
 import { AppError } from "../../utils/AppError";
+import { sendEmail } from "../../utils/email";
 
 export class AuthService {
+
   // 🟢 REGISTER
   static async register(data: {
     email: string;
@@ -37,11 +39,7 @@ export class AuthService {
     const accessToken = generateAccessToken(user.id, user.role);
     const refreshToken = generateRefreshToken(user.id);
 
-    return {
-      user,
-      accessToken,
-      refreshToken,
-    };
+    return { user, accessToken, refreshToken };
   }
 
   // 🟡 LOGIN
@@ -60,34 +58,26 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      throw new Error("Invalid credentials");
+      throw new AppError("Invalid credentials", 401);
     }
 
     const accessToken = generateAccessToken(user.id, user.role);
     const refreshToken = generateRefreshToken(user.id);
 
-    return {
-      user,
-      accessToken,
-      refreshToken,
-    };
+    return { user, accessToken, refreshToken };
   }
 
   // 🔵 REFRESH TOKEN
   static async refresh(refreshToken: string) {
-    if (!refreshToken) {
-      throw new Error("Refresh token missing");
-    }
-
-    let decoded: { userId: string };
+    let decoded: any;
 
     try {
       decoded = jwt.verify(
         refreshToken,
         env.JWT_REFRESH_SECRET
-      ) as { userId: string };
+      );
     } catch {
-      throw new Error("Invalid refresh token");
+      throw new AppError("Invalid refresh token", 401);
     }
 
     const user = await prisma.user.findUnique({
@@ -109,6 +99,77 @@ export class AuthService {
 
   // 🔴 LOGOUT
   static async logout() {
+    return true;
+  }
+
+  // 🔥 FORGOT PASSWORD
+  static async forgotPassword(email: string) {
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      // do not reveal user existence
+      return true;
+    }
+
+    const resetToken = jwt.sign(
+      { userId: user.id },
+      env.JWT_SECRET,
+      { expiresIn: "15m" }
+    );
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { resetToken },
+    });
+
+    const resetLink =
+      `http://localhost:5000/reset-password?token=${resetToken}`;
+
+    await sendEmail(
+      user.email,
+      "Reset Password",
+      `Click here to reset your password: ${resetLink}`
+    );
+
+    return true;
+  }
+
+  // 🔥 RESET PASSWORD
+  static async resetPassword(
+    token: string,
+    newPassword: string
+  ) {
+    let decoded: any;
+
+    try {
+      decoded = jwt.verify(
+        token,
+        env.JWT_SECRET
+      );
+    } catch {
+      throw new AppError("Invalid or expired token", 400);
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+    });
+
+    if (!user || user.resetToken !== token) {
+      throw new AppError("Invalid reset request", 400);
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetToken: null,
+      },
+    });
+
     return true;
   }
 }

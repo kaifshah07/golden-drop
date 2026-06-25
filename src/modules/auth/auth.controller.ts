@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
 import { AuthService } from "./auth.service";
+import { env } from "../../config/env";
 
 const COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: false, // set true in production (HTTPS)
+  secure: env.NODE_ENV === "production",
   sameSite: "lax" as const,
   path: "/",
 };
@@ -112,6 +113,42 @@ export class AuthController {
       return res.status(500).json({
         success: false,
         message: error.message || "Logout failed",
+      });
+    }
+  }
+
+    // 🔥 FORGOT PASSWORD
+  static async forgotPassword(req: Request, res: Response) {
+    try {
+      await AuthService.forgotPassword(req.body.email);
+
+      return res.json({
+        success: true,
+        message: "If email exists, reset link sent",
+      });
+    } catch (err: any) {
+      return res.status(400).json({
+        success: false,
+        message: err.message,
+      });
+    }
+  }
+
+  // 🔥 RESET PASSWORD
+  static async resetPassword(req: Request, res: Response) {
+    try {
+      const { token, newPassword } = req.body;
+
+      await AuthService.resetPassword(token, newPassword);
+
+      return res.json({
+        success: true,
+        message: "Password reset successful",
+      });
+    } catch (err: any) {
+      return res.status(400).json({
+        success: false,
+        message: err.message,
       });
     }
   }

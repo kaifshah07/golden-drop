@@ -1,73 +1,83 @@
 import express from "express";
+import cookieParser from "cookie-parser";
+
 import { env } from "./config/env";
 import logger from "./config/logger";
 import { errorHandler } from "./middleware/error.middleware";
+
+// Routes
 import authRoutes from "./routes/auth.routes";
-import cookieParser from "cookie-parser";
 import userRoutes from "./modules/user/user.routes";
 import productRoutes from "./modules/product/product.routes";
 import variantRoutes from "./modules/variants/variant.routes";
 import cartRoutes from "./modules/cart/cart.routes";
 import orderRoutes from "./modules/order/order.routes";
 import paymentRoutes from "./modules/payment/payment.routes";
-
-
-
-
-
-
-
-
-
+import addressRoutes from "./modules/address/address.routes";
+import checkoutRoutes from "./modules/checkout/checkout.routes";
+import adminRoutes from "./modules/admin/admin.routes";
+import reviewRoutes from "./modules/review/review.routes";
+import couponRoutes from "./modules/coupon/coupon.routes";
+import blogRoutes from "./modules/blog/blog.routes";
+import shippingRoutes from "./modules/shipping/shipping.routes";
 
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
 };
+
 const app = express();
 
 /**
- * Middlewares
+ * Razorpay Webhook
+ * MUST come before express.json()
  */
-app.use(express.json());
+app.use(
+  "/api/payment/webhook",
+  express.raw({
+    type: "application/json",
+  })
+);
 
 /**
- * Health check route
+ * Global Middlewares
  */
-app.get("/health", (req, res) => {
-  res.json({
+app.use(express.json());
+app.use(cookieParser());
+
+/**
+ * Health Check
+ */
+app.get("/health", (_req, res) => {
+  return res.json({
     success: true,
     message: "Server is running",
   });
 });
 
 /**
- * TODO: routes will come here
- * app.use("/api/auth", authRoutes);
- * app.use("/api/products", productRoutes);
- * app.use("/api/orders", orderRoutes);
+ * API Routes
  */
-
-/**
- * Global error handler (must be LAST)
- */
-app.use(errorHandler);
-
-/**
- * Start server
- */
-app.listen(env.PORT, () => {
-  logger.info(`Server running on port ${env.PORT}`);
-});
-
 app.use("/api/auth", authRoutes);
-
-app.use(cookieParser());
-app.use(express.json());
 app.use("/api/user", userRoutes);
 app.use("/api/products", productRoutes);
-app.use(errorHandler);
-
 app.use("/api/variants", variantRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/address", addressRoutes);
+app.use("/api/checkout", checkoutRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/coupons", couponRoutes);
+app.use("/api/blogs", blogRoutes);
+app.use("/api/shipping", shippingRoutes);
+
+/**
+ * Global Error Handler
+ * MUST be last
+ */
+app.use(errorHandler);
+
+app.listen(env.PORT, () => {
+  logger.info(`Server running on port ${env.PORT}`);
+});
