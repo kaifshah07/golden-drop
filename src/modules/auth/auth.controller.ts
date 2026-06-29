@@ -13,13 +13,14 @@ export class AuthController {
   // 🟢 REGISTER
   static async register(req: Request, res: Response) {
     try {
-      const { email, password, name } = req.body;
+      const { name, email, mobile, password } = req.body;
 
       const result = await AuthService.register({
-        email,
-        password,
-        name,
-      });
+  name,
+  email,
+  mobile,
+  password,
+});
 
       res.cookie("refreshToken", result.refreshToken, COOKIE_OPTIONS);
 

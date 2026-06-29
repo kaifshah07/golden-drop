@@ -1,12 +1,14 @@
 import express from "express";
 import cookieParser from "cookie-parser";
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./docs/swagger";
 
 import { env } from "./config/env";
 import logger from "./config/logger";
 import { errorHandler } from "./middleware/error.middleware";
 
 // Routes
-import authRoutes from "./routes/auth.routes";
+import authRoutes from "./modules/auth/auth.routes";
 import userRoutes from "./modules/user/user.routes";
 import productRoutes from "./modules/product/product.routes";
 import variantRoutes from "./modules/variants/variant.routes";
@@ -53,6 +55,15 @@ app.get("/health", (_req, res) => {
     message: "Server is running",
   });
 });
+
+/**
+ * Swagger Documentation
+ */
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec)
+);
 
 /**
  * API Routes

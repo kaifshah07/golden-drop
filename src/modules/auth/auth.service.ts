@@ -13,10 +13,11 @@ export class AuthService {
 
   // 🟢 REGISTER
   static async register(data: {
-    email: string;
-    password: string;
-    name: string;
-  }) {
+  name: string;
+  email: string;
+  mobile: string;
+  password: string;
+}) {
     const existingUser = await prisma.user.findUnique({
       where: { email: data.email },
     });
@@ -28,13 +29,14 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
     const user = await prisma.user.create({
-      data: {
-        email: data.email,
-        password: hashedPassword,
-        name: data.name,
-        role: "CUSTOMER",
-      },
-    });
+  data: {
+    name: data.name,
+    email: data.email,
+    mobile: data.mobile,
+    password: hashedPassword,
+    role: "CUSTOMER",
+  },
+});
 
     const accessToken = generateAccessToken(user.id, user.role);
     const refreshToken = generateRefreshToken(user.id);
