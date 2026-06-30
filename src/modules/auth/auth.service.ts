@@ -172,6 +172,6 @@ export class AuthService {
       },
     });
 
-    return true;
+    return true
   }
 }

@@ -1,24 +1,40 @@
 import { Router } from "express";
 import { PaymentController } from "./payment.controller";
+import { validate } from "../../middleware/validate.middleware";
+import { authenticate } from "../../middleware/auth.middleware";
+
+import {
+  createPaymentSchema,
+  verifyPaymentSchema,
+  refundPaymentSchema,
+} from "./payment.validation";
 
 const router = Router();
 
-
 router.post(
-    "/create",
-    PaymentController.createOrder
+  "/create",
+  authenticate,
+  validate(createPaymentSchema),
+  PaymentController.createOrder
 );
 
-
 router.post(
-    "/verify",
-    PaymentController.verify
+  "/verify",
+  authenticate,
+  validate(verifyPaymentSchema),
+  PaymentController.verify
 );
 
+router.post(
+  "/refund",
+  authenticate,
+  validate(refundPaymentSchema),
+  PaymentController.refund
+);
 
 router.post(
-    "/webhook",
-    PaymentController.webhook
+  "/webhook",
+  PaymentController.webhook
 );
 
 

@@ -1,3 +1,276 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            BigInt         @id @default(autoincrement())
+  name          String
+  email         String         @unique
+  mobile        String         @unique
+  password      String
+  role          Role           @default(CUSTOMER)
+  isVerified    Boolean        @default(false)
+  resetToken    String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  addresses     Address[]
+  carts         Cart[]
+  notifications Notification[]
+  orders        Order[]
+  reviews       Review[]
+
+  @@map("users")
+}
+
+model Address {
+  id           BigInt   @id @default(autoincrement())
+  userId       BigInt
+  fullName     String
+  mobile       String
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  state        String
+  pincode      String
+  country      String
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders       Order[]
+
+  @@index([userId])
+  @@map("addresses")
+}
+
+model Notification {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("notifications")
+}
+
+model Category {
+  id          BigInt    @id @default(autoincrement())
+  name        String
+  slug        String    @unique
+  description String?
+  status      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  products    Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id               BigInt           @id @default(autoincrement())
+  categoryId       BigInt
+  name             String
+  slug             String           @unique
+  shortDescription String?
+  description      String?
+  benefits         String?
+  featuredImage    String?
+  status           Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  variants         ProductVariant[]
+  category         Category         @relation(fields: [categoryId], references: [id])
+  reviews          Review[]
+
+  @@index([categoryId])
+  @@map("products")
+}
+
+model ProductVariant {
+  id         BigInt      @id @default(autoincrement())
+  productId  BigInt
+  sku        String      @unique
+  size       String
+  price      Decimal
+  salePrice  Decimal?
+  stock      Int
+  weight     Decimal?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+  product    Product     @relation(fields: [productId], references: [id])
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+model Banner {
+  id        BigInt   @id @default(autoincrement())
+  title     String
+  image     String
+  status    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("banners")
+}
+
+model Cart {
+  id        BigInt     @id @default(autoincrement())
+  userId    BigInt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  items     CartItem[]
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("carts")
+}
+
+model CartItem {
+  id               BigInt         @id @default(autoincrement())
+  cartId           BigInt
+  productVariantId BigInt
+  quantity         Int
+  createdAt        DateTime       @default(now())
+  cart             Cart           @relation(fields: [cartId], references: [id])
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id])
+
+  @@index([cartId])
+  @@index([productVariantId])
+  @@map("cart_items")
+}
+
+model Coupon {
+  id           BigInt     @id @default(autoincrement())
+  code         String     @unique
+  type         CouponType
+  value        Decimal
+  minimumOrder Decimal
+  maxDiscount  Decimal?
+  usageLimit   Int?
+  usedCount    Int        @default(0)
+  expiryDate   DateTime
+  status       Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+
+  @@map("coupons")
+}
+
+model Order {
+  id             BigInt        @id @default(autoincrement())
+  orderNumber    String        @unique
+  userId         BigInt
+  addressId      BigInt
+  subtotal       Decimal
+  discount       Decimal       @default(0.000000000000000000000000000000)
+  shippingCharge Decimal       @default(0.000000000000000000000000000000)
+  totalAmount    Decimal
+  paymentStatus  PaymentStatus
+  orderStatus    OrderStatus
+  trackingNumber String?
+  courierName    String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  items          OrderItem[]
+  address        Address       @relation(fields: [addressId], references: [id])
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payment        Payment?
+
+  @@index([userId])
+  @@index([addressId])
+  @@map("orders")
+}
+
+model OrderItem {
+  id               BigInt         @id @default(autoincrement())
+  orderId          BigInt
+  productVariantId BigInt
+  quantity         Int
+  unitPrice        Decimal
+  totalPrice       Decimal
+  order            Order          @relation(fields: [orderId], references: [id])
+  productVariant   ProductVariant @relation(fields: [productVariantId], references: [id])
+
+  @@index([orderId])
+  @@index([productVariantId])
+  @@map("order_items")
+}
+
+model Payment {
+  id             BigInt        @id @default(autoincrement())
+  orderId        BigInt        @unique
+  paymentGateway String
+  paymentId      String?
+  transactionId  String?
+  amount         Decimal
+  paymentStatus  PaymentStatus
+  createdAt      DateTime      @default(now())
+  order          Order         @relation(fields: [orderId], references: [id])
+
+  @@map("payments")
+}
+
+model Review {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt
+  productId BigInt
+  rating    Int
+  review    String?
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([productId])
+  @@map("reviews")
+}
+
+model Blog {
+  id              BigInt   @id @default(autoincrement())
+  title           String
+  slug            String   @unique
+  content         String
+  featuredImage   String?
+  metaTitle       String?
+  metaDescription String?
+  status          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("blogs")
+}
+
+model DistributorLead {
+  id           BigInt   @id @default(autoincrement())
+  name         String
+  mobile       String
+  email        String?
+  businessName String?
+  city         String?
+  state        String?
+  createdAt    DateTime @default(now())
+
+  @@map("distributor_leads")
+}
+
+model Setting {
+  id        BigInt   @id @default(autoincrement())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+
+  @@map("settings")
+}
+
 enum Role {
   CUSTOMER
   ADMIN
@@ -23,320 +296,4 @@ enum OrderStatus {
 enum CouponType {
   FIXED
   PERCENTAGE
-}
-
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
-}
-
-model User {
-  id         BigInt  @id @default(autoincrement())
-  name       String
-  email      String  @unique
-  mobile     String  @unique
-  password   String
-  role       Role    @default(CUSTOMER)
-  isVerified Boolean @default(false)
-  resetToken String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  addresses     Address[]
-  notifications Notification[]
-  carts         Cart[]
-  orders        Order[]
-  reviews       Review[]
-
-  @@map("users")
-}
-
-model Address {
-  id     BigInt @id @default(autoincrement())
-  userId BigInt
-
-  fullName     String
-  mobile       String
-  addressLine1 String
-  addressLine2 String?
-
-  city    String
-  state   String
-  pincode String
-  country String
-
-  isDefault Boolean @default(false)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  orders Order[]
-
-  @@index([userId])
-  @@map("addresses")
-}
-
-model Notification {
-  id     BigInt @id @default(autoincrement())
-  userId BigInt
-
-  title   String
-  message String
-  isRead  Boolean @default(false)
-
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("notifications")
-}
-
-model Category {
-  id          BigInt  @id @default(autoincrement())
-  name        String
-  slug        String  @unique
-  description String?
-  status      Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  products Product[]
-
-  @@map("categories")
-}
-
-model Product {
-  id         BigInt @id @default(autoincrement())
-  categoryId BigInt
-
-  name             String
-  slug             String  @unique
-  shortDescription String?
-  description      String?
-  benefits         String?
-  featuredImage    String?
-  status           Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  category Category         @relation(fields: [categoryId], references: [id])
-  variants ProductVariant[]
-  reviews  Review[]
-
-  @@index([categoryId])
-  @@map("products")
-}
-
-model ProductVariant {
-  id        BigInt @id @default(autoincrement())
-  productId BigInt
-
-  sku       String   @unique
-  size      String
-  price     Decimal
-  salePrice Decimal?
-  stock     Int
-  weight    Decimal?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  product Product @relation(fields: [productId], references: [id])
-
-  cartItems  CartItem[]
-  orderItems OrderItem[]
-
-  @@index([productId])
-  @@map("product_variants")
-}
-
-model Banner {
-  id     BigInt  @id @default(autoincrement())
-  title  String
-  image  String
-  status Boolean @default(true)
-
-  createdAt DateTime @default(now())
-
-  @@map("banners")
-}
-
-model Cart {
-  id     BigInt @id @default(autoincrement())
-  userId BigInt
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items CartItem[]
-
-  @@index([userId])
-  @@map("carts")
-}
-
-model CartItem {
-  id               BigInt @id @default(autoincrement())
-  cartId           BigInt
-  productVariantId BigInt
-  quantity         Int
-
-  createdAt DateTime @default(now())
-
-  cart           Cart           @relation(fields: [cartId], references: [id])
-  productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
-
-  @@index([cartId])
-  @@index([productVariantId])
-  @@map("cart_items")
-}
-
-model Coupon {
-  id           BigInt     @id @default(autoincrement())
-  code         String     @unique
-  type         CouponType
-  value        Decimal
-  minimumOrder Decimal
-  maxDiscount  Decimal?
-  usageLimit   Int?
-  usedCount    Int        @default(0)
-  expiryDate   DateTime
-  status       Boolean    @default(true)
-
-  createdAt DateTime @default(now())
-
-  @@map("coupons")
-}
-
-model Order {
-  id          BigInt @id @default(autoincrement())
-  orderNumber String @unique
-
-  userId    BigInt
-  addressId BigInt
-
-  subtotal       Decimal
-  discount       Decimal @default(0)
-  shippingCharge Decimal @default(0)
-  totalAmount    Decimal
-
-  paymentStatus PaymentStatus
-  orderStatus   OrderStatus
-
-  trackingNumber String?
-  courierName    String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  address Address @relation(fields: [addressId], references: [id])
-
-  items   OrderItem[]
-  payment Payment?
-
-  @@index([userId])
-  @@index([addressId])
-  @@map("orders")
-}
-
-model OrderItem {
-  id               BigInt @id @default(autoincrement())
-  orderId          BigInt
-  productVariantId BigInt
-
-  quantity   Int
-  unitPrice  Decimal
-  totalPrice Decimal
-
-  order          Order          @relation(fields: [orderId], references: [id])
-  productVariant ProductVariant @relation(fields: [productVariantId], references: [id])
-
-  @@index([orderId])
-  @@index([productVariantId])
-  @@map("order_items")
-}
-
-model Payment {
-  id      BigInt @id @default(autoincrement())
-  orderId BigInt @unique
-
-  paymentGateway String
-  paymentId      String?
-  transactionId  String?
-  amount         Decimal
-  paymentStatus  PaymentStatus
-
-  createdAt DateTime @default(now())
-
-  order Order @relation(fields: [orderId], references: [id])
-
-  @@map("payments")
-}
-
-model Review {
-  id        BigInt @id @default(autoincrement())
-  userId    BigInt
-  productId BigInt
-
-  rating Int
-  review String?
-
-  createdAt DateTime @default(now())
-
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
-
-  @@index([userId])
-  @@index([productId])
-  @@map("reviews")
-}
-
-model Blog {
-  id              BigInt  @id @default(autoincrement())
-  title           String
-  slug            String  @unique
-  content         String
-  featuredImage   String?
-  metaTitle       String?
-  metaDescription String?
-  status          Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("blogs")
-}
-
-model DistributorLead {
-  id           BigInt  @id @default(autoincrement())
-  name         String
-  mobile       String
-  email        String?
-  businessName String?
-  city         String?
-  state        String?
-
-  createdAt DateTime @default(now())
-
-  @@map("distributor_leads")
-}
-
-model Setting {
-  id    BigInt @id @default(autoincrement())
-  key   String @unique
-  value String
-
-  createdAt DateTime @default(now())
-
-  @@map("settings")
 }

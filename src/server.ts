@@ -88,7 +88,7 @@ app.use("/api/shipping", shippingRoutes);
  * MUST be last
  */
 app.use(errorHandler);
-
+console.log("DATABASE_URL =", process.env.DATABASE_URL);
 app.listen(env.PORT, () => {
   logger.info(`Server running on port ${env.PORT}`);
 });

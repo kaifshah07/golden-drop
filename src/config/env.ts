@@ -18,11 +18,16 @@ export const env = {
   AWS_SECRET_KEY:
     process.env.AWS_SECRET_KEY || "",
 
+
+
   RAZORPAY_KEY_ID:
     process.env.RAZORPAY_KEY_ID || "",
 
   RAZORPAY_SECRET:
     process.env.RAZORPAY_SECRET || "",
+  
+  RAZORPAY_WEBHOOK_SECRET:
+  process.env.RAZORPAY_WEBHOOK_SECRET || "",
 
   EMAIL_HOST:
     process.env.EMAIL_HOST || "",
