@@ -6,6 +6,7 @@ import { authorize } from "../../middleware/role.middleware";
 
 const router = Router();
 
+router.get("/", VariantController.getAll);
 // 📦 GET VARIANTS (PUBLIC)
 router.get("/product/:productId", VariantController.getByProduct);
 

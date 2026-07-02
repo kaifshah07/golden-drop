@@ -46,6 +46,13 @@ export class VariantService {
   }
 
   // 📦 GET VARIANTS BY PRODUCT
+  static async getAllVariants() {
+  return prisma.productVariant.findMany({
+    include: {
+      product: true,
+    },
+  });
+}
   static async getVariantsByProduct(productId: number) {
     return prisma.productVariant.findMany({
       where: {

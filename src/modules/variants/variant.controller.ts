@@ -40,4 +40,12 @@ export class VariantController {
       data: updated,
     });
   }
+  static async getAll(req: Request, res: Response) {
+  const variants = await VariantService.getAllVariants();
+
+  return res.status(200).json({
+    success: true,
+    data: variants,
+  });
+}
 }

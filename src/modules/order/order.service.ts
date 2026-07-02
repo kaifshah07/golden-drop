@@ -11,16 +11,18 @@ export class OrderService {
     const addressId = data?.addressId;
 
     // 1. Get cart
-    const cart = await prisma.cart.findUnique({
-      where: { userId: BigInt(userId) },
+   const cart = await prisma.cart.findFirst({
+  where: {
+    userId: BigInt(userId),
+  },
+  include: {
+    items: {
       include: {
-        items: {
-          include: {
-            productVariant: true,
-          },
-        },
+        productVariant: true,
       },
-    });
+    },
+  },
+});
 
     if (!cart || cart.items.length === 0) {
       throw new AppError("Cart is empty", 400);
