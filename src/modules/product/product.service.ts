@@ -48,14 +48,103 @@ export class ProductService {
     });
   }
 
-  static async getAllProducts() {
-    return prisma.product.findMany({
-      include: {
-        category: true,
-        variants: true,
-      },
-    });
+  static async getAllProducts(query: any) {
+
+  const page = Number(query.page) || 1;
+
+  const limit = Number(query.limit) || 10;
+
+  const skip = (page - 1) * limit;
+
+  const where: any = {
+    status: true,
+  };
+
+  if (query.search) {
+    where.name = {
+      contains: query.search,
+    };
   }
+
+  if (query.categoryId) {
+    where.categoryId = BigInt(query.categoryId);
+  }
+
+  if (query.minPrice || query.maxPrice) {
+    where.variants = {
+      some: {
+        price: {
+          gte: query.minPrice
+            ? Number(query.minPrice)
+            : undefined,
+
+          lte: query.maxPrice
+            ? Number(query.maxPrice)
+            : undefined,
+        },
+      },
+    };
+  }
+
+  let orderBy: any = {
+    createdAt: "desc",
+  };
+
+  if (query.sort === "priceAsc") {
+    orderBy = {
+      variants: {
+        _count: "asc",
+      },
+    };
+  }
+
+  if (query.sort === "priceDesc") {
+    orderBy = {
+      variants: {
+        _count: "desc",
+      },
+    };
+  }
+
+  const total = await prisma.product.count({
+    where,
+  });
+
+  const products = await prisma.product.findMany({
+
+    where,
+
+    skip,
+
+    take: limit,
+
+    orderBy,
+
+    include: {
+
+      category: true,
+
+      variants: true,
+
+    },
+
+  });
+
+  return {
+
+    total,
+
+    page,
+
+    limit,
+
+    totalPages: Math.ceil(total / limit),
+
+    products,
+
+  };
+
+}
 
   static async getProductById(id: number) {
     const product = await prisma.product.findUnique({

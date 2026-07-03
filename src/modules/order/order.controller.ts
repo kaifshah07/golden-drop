@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { OrderService } from "./order.service";
+import { generateInvoice } from "../../utils/invoice";
 
 export class OrderController {
   // 🛒 CREATE ORDER
@@ -107,4 +108,32 @@ export class OrderController {
       });
     }
   }
+  static async invoice(
+  req: Request,
+  res: Response
+) {
+
+  const order =
+    await OrderService.getInvoice(
+      Number(req.params.id)
+    );
+
+  const pdf =
+    generateInvoice(order);
+
+  res.setHeader(
+    "Content-Type",
+    "application/pdf"
+  );
+
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename=invoice-${order.orderNumber}.pdf`
+  );
+
+  pdf.pipe(res);
+
+  pdf.end();
+
+}
 }

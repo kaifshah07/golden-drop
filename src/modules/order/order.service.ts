@@ -232,4 +232,45 @@ export class OrderService {
       },
     });
   }
+  static async getInvoice(orderId: number) {
+
+  const order = await prisma.order.findUnique({
+
+    where: {
+      id: BigInt(orderId),
+    },
+
+    include: {
+
+      user: true,
+
+      address: true,
+
+      items: {
+
+        include: {
+
+          productVariant: {
+
+            include: {
+              product: true,
+            },
+
+          },
+
+        },
+
+      },
+
+    },
+
+  });
+
+  if (!order) {
+    throw new AppError("Order not found",404);
+  }
+
+  return order;
+
+}
 }

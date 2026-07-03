@@ -5,7 +5,11 @@ import { sendResponse } from "../../utils/apiResponse";
 
 export class ProductController {
   static createProduct = asyncHandler(async (req: Request, res: Response) => {
-    const product = await ProductService.createProduct(req.body);
+  const request = req as any;
+   if (request.file) {
+    request.body.featuredImage = request.file.path;
+  }
+  const product = await ProductService.createProduct(request.body);
 
     res.status(201).json({
       success: true,
@@ -15,7 +19,7 @@ export class ProductController {
   });
 
   static getAllProducts = asyncHandler(async (req: Request, res: Response) => {
-    const products = await ProductService.getAllProducts();
+    const products = await ProductService.getAllProducts(req.query);
 
     res.status(200).json({
       success: true,

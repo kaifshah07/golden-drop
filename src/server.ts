@@ -22,6 +22,9 @@ import reviewRoutes from "./modules/review/review.routes";
 import couponRoutes from "./modules/coupon/coupon.routes";
 import blogRoutes from "./modules/blog/blog.routes";
 import shippingRoutes from "./modules/shipping/shipping.routes";
+import categoryRoutes from "./modules/category/category.routes";
+import bannerRoutes from "./modules/banner/banner.routes";
+import notificationRoutes from "./modules/notification/notification.routes";
 
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
@@ -82,7 +85,9 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/coupons", couponRoutes);
 app.use("/api/blogs", blogRoutes);
 app.use("/api/shipping", shippingRoutes);
-
+app.use("/api/categories", categoryRoutes);
+app.use("/api/banners", bannerRoutes);
+app.use("/api/notifications", notificationRoutes);
 /**
  * Global Error Handler
  * MUST be last

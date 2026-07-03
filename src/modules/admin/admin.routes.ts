@@ -1,29 +1,118 @@
 import { Router } from "express";
 import { AdminController } from "./admin.controller";
 import { authenticate } from "../../middleware/auth.middleware";
-import { adminOnly } from "../../middleware/admin.middleware";
+import { authorize } from "../../middleware/role.middleware";
 
 const router = Router();
 
 router.get(
   "/dashboard",
   authenticate,
-  adminOnly,
+  authorize(["ADMIN"]),
   AdminController.dashboard
+);
+router.get(
+  "/recent-orders",
+  authenticate,
+  authorize(["ADMIN"]),
+  AdminController.recentOrders
 );
 
 router.get(
-  "/orders",
+  "/low-stock",
   authenticate,
-  adminOnly,
-  AdminController.orders
+  authorize(["ADMIN"]),
+  AdminController.lowStockProducts
+);
+
+router.get(
+  "/top-products",
+  authenticate,
+  authorize(["ADMIN"]),
+  AdminController.topSellingProducts
+);
+
+router.get(
+  "/monthly-sales",
+  authenticate,
+  authorize(["ADMIN"]),
+  AdminController.monthlySales
 );
 
 router.get(
   "/users",
   authenticate,
-  adminOnly,
-  AdminController.users
+  authorize(["ADMIN"]),
+  AdminController.getUsers
 );
 
+router.get(
+  "/users/:id",
+  authenticate,
+  authorize(["ADMIN"]),
+  AdminController.getUser
+);
+
+router.delete(
+  "/users/:id",
+  authenticate,
+  authorize(["ADMIN"]),
+  AdminController.deleteUser
+);
+
+router.patch(
+  "/users/:id/role",
+  authenticate,
+  authorize(["ADMIN"]),
+  AdminController.changeRole
+);
+
+router.get(
+  "/orders",
+  authenticate,
+  authorize(["ADMIN"]),
+  AdminController.getOrders
+);
+
+router.get(
+  "/orders/:id",
+  authenticate,
+  authorize(["ADMIN"]),
+  AdminController.getOrder
+);
+
+router.patch(
+  "/orders/:id/status",
+  authenticate,
+  authorize(["ADMIN"]),
+  AdminController.updateOrderStatus
+);
+
+router.patch(
+  "/orders/:id/payment",
+  authenticate,
+ authorize(["ADMIN"]),
+  AdminController.updatePaymentStatus
+);
+
+router.get(
+  "/reports/sales",
+  authenticate,
+  authorize(["ADMIN"]),
+  AdminController.salesReport
+);
+
+router.get(
+  "/reports/customers",
+  authenticate,
+  authorize(["ADMIN"]),
+  AdminController.customerReport
+);
+
+router.get(
+  "/reports/products",
+  authenticate,
+  authorize(["ADMIN"]),
+  AdminController.productReport
+);
 export default router;

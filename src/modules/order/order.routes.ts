@@ -35,4 +35,10 @@ router.patch(
   OrderController.cancel
 );
 
+router.get(
+  "/:id/invoice",
+  authenticate,
+  OrderController.invoice
+);
+
 export default router;

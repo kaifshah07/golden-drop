@@ -12,7 +12,7 @@ router.get("/product/:productId", VariantController.getByProduct);
 
 // 🔐 ADMIN ONLY
 router.post(
-  "/",
+  "/",  
   authenticate,
   authorize(["ADMIN"]),
   VariantController.createVariant

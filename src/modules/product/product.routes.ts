@@ -6,6 +6,7 @@ import { authorize } from "../../middleware/role.middleware";
 
 import { validate } from "../../middleware/validate.middleware";
 import { createProductSchema } from "./product.validator";
+import { upload } from "../../middleware/upload.middleware";
 
 const router = Router();
 
@@ -21,7 +22,7 @@ router.post(
   "/",
   authenticate,
   authorize(["ADMIN"]),
-  validate(createProductSchema),
+  upload.single("image"),
   ProductController.createProduct
 );
 
