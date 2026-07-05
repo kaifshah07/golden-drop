@@ -160,6 +160,22 @@ export class PaymentService {
       },
     });
 
+    const order = await prisma.order.findUnique({
+  where: {
+    id: payment.orderId,
+  },
+});
+
+if (order) {
+  await prisma.notification.create({
+    data: {
+      userId: order.userId,
+      title: "Payment Successful",
+      message: `Payment received for Order ${order.orderNumber}.`,
+    },
+  });
+}
+
     return updatedPayment;
   }
 

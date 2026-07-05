@@ -25,6 +25,7 @@ import shippingRoutes from "./modules/shipping/shipping.routes";
 import categoryRoutes from "./modules/category/category.routes";
 import bannerRoutes from "./modules/banner/banner.routes";
 import notificationRoutes from "./modules/notification/notification.routes";
+// import wishlistRoutes from "./modules/wishlist/wishlist.routes";
 
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
@@ -88,6 +89,7 @@ app.use("/api/shipping", shippingRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/banners", bannerRoutes);
 app.use("/api/notifications", notificationRoutes);
+// app.use("/api/wishlist",wishlistRoutes);
 /**
  * Global Error Handler
  * MUST be last

@@ -122,6 +122,13 @@ export class OrderService {
     await prisma.cartItem.deleteMany({
       where: { cartId: cart.id },
     });
+    await prisma.notification.create({
+  data: {
+    userId: order.userId,
+    title: "Order Placed",
+    message: `Your order ${order.orderNumber} has been placed successfully.`,
+  },
+});
 
     return order;
   }
@@ -272,5 +279,7 @@ export class OrderService {
 
   return order;
 
+
 }
+
 }

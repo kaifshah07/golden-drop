@@ -23,6 +23,7 @@ model User {
   notifications Notification[]
   orders        Order[]
   reviews       Review[]
+  wishlists     Wishlist[]
 
   @@map("users")
 }
@@ -89,6 +90,7 @@ model Product {
   variants         ProductVariant[]
   category         Category         @relation(fields: [categoryId], references: [id])
   reviews          Review[]
+  wishlists        Wishlist[]
 
   @@index([categoryId])
   @@map("products")
@@ -296,4 +298,18 @@ enum OrderStatus {
 enum CouponType {
   FIXED
   PERCENTAGE
+}
+
+model Wishlist {
+  id        BigInt   @id @default(autoincrement())
+  userId    BigInt
+  productId BigInt
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
+  @@map("wishlists")
 }
