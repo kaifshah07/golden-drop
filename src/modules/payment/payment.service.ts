@@ -3,6 +3,8 @@ import { prisma } from "../../prisma/client";
 import { razorpay } from "../../config/razorpay";
 import { env } from "../../config/env";
 import { AppError } from "../../utils/AppError";
+import { sendEmail } from "../../utils/email";
+import { paymentSuccessTemplate } from "../../templates/paymentSuccess";
 
 export class PaymentService {
 
@@ -72,6 +74,34 @@ export class PaymentService {
           amount: order.totalAmount,
         },
       });
+        const customer = await prisma.user.findUnique({
+
+    where:{
+        id: order.userId
+    }
+
+});
+
+if(customer){
+
+    await sendEmail(
+
+        customer.email,
+
+        "Payment Successful",
+
+        paymentSuccessTemplate(
+
+            customer.name,
+
+            order.orderNumber
+
+        )
+
+    );
+
+}
+ 
 
     } else {
 

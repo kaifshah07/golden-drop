@@ -8,6 +8,8 @@ import {
 import { env } from "../../config/env";
 import { AppError } from "../../utils/AppError";
 import { sendEmail } from "../../utils/email";
+import { welcomeTemplate } from "../../templates/welcome";
+import { forgotPasswordTemplate } from "../../templates/forgotPassword";
 
 export class AuthService {
 
@@ -37,6 +39,11 @@ export class AuthService {
     role: "CUSTOMER",
   },
 });
+   await sendEmail(
+  user.email,
+  "Welcome to Golden Drop",
+  welcomeTemplate(user.name)
+);
 
     const accessToken = generateAccessToken(user.id, user.role);
     const refreshToken = generateRefreshToken(user.id);
@@ -130,10 +137,13 @@ export class AuthService {
       `http://localhost:5000/reset-password?token=${resetToken}`;
 
     await sendEmail(
-      user.email,
-      "Reset Password",
-      `Click here to reset your password: ${resetLink}`
-    );
+  user.email,
+  "Reset Password",
+  forgotPasswordTemplate(
+    user.name,
+    resetLink
+  )
+);
 
     return true;
   }

@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { AdminService } from "./admin.service";
+import { exportExcel } from "../../utils/exportExcel";
 
 export class AdminController {
   static async dashboard(
@@ -105,8 +106,15 @@ static async getUsers(
   res: Response
 ) {
   try {
-    const users =
-      await AdminService.getAllUsers();
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const search = req.query.search as string | undefined;
+
+    const users = await AdminService.getAllUsers(
+      page,
+      limit,
+      search
+    );
 
     return res.status(200).json({
       success: true,
@@ -119,7 +127,6 @@ static async getUsers(
     });
   }
 }
-
 static async getUser(
   req: Request,
   res: Response
@@ -280,8 +287,14 @@ static async salesReport(
   res: Response
 ) {
   try {
+    const from = req.query.from as string | undefined;
+    const to = req.query.to as string | undefined;
+
     const report =
-      await AdminService.getSalesReport();
+      await AdminService.getSalesReport(
+        from,
+        to
+      );
 
     return res.status(200).json({
       success: true,
@@ -332,6 +345,207 @@ static async productReport(
       success: false,
       message: err.message,
     });
+  }
+}
+
+static async exportUsers(req: Request, res: Response) {
+
+const users = await AdminService.exportUsers();
+
+const workbook = await exportExcel(
+
+"Users",
+
+[
+{header:"ID",key:"id"},
+{header:"Name",key:"name"},
+{header:"Email",key:"email"},
+{header:"Role",key:"role"},
+{header:"Verified",key:"isVerified"},
+],
+
+users
+
+);
+
+res.setHeader(
+
+"Content-Type",
+
+"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+);
+
+res.setHeader(
+
+"Content-Disposition",
+
+"attachment; filename=users.xlsx"
+
+);
+
+await workbook.xlsx.write(res);
+
+res.end();
+
+}
+
+static async exportProducts(req:Request,res:Response){
+
+const products=await AdminService.exportProducts();
+
+const workbook=await exportExcel(
+
+"Products",
+
+[
+
+{header:"ID",key:"id"},
+
+{header:"Name",key:"name"},
+
+{header:"Category",key:"category"},
+
+{header:"Slug",key:"slug"},
+
+],
+
+products.map(p=>({
+
+id:p.id,
+
+name:p.name,
+
+category:p.category.name,
+
+slug:p.slug
+
+}))
+
+);
+
+res.setHeader(
+
+"Content-Disposition",
+
+"attachment; filename=products.xlsx"
+
+);
+
+await workbook.xlsx.write(res);
+
+res.end();
+
+}
+
+static async exportOrders(req:Request,res:Response){
+
+const orders=await AdminService.exportOrders();
+
+const workbook=await exportExcel(
+
+"Orders",
+
+[
+
+{header:"Order",key:"orderNumber"},
+
+{header:"Customer",key:"customer"},
+
+{header:"Amount",key:"amount"},
+
+{header:"Status",key:"status"}
+
+],
+
+orders.map(o=>({
+
+orderNumber:o.orderNumber,
+
+customer:o.user.name,
+
+amount:o.totalAmount,
+
+status:o.orderStatus
+
+}))
+
+);
+
+res.setHeader(
+
+"Content-Disposition",
+
+"attachment; filename=orders.xlsx"
+
+);
+
+await workbook.xlsx.write(res);
+
+res.end();
+
+}
+
+static async inventorySummary(
+  req: Request,
+  res: Response
+) {
+  try {
+    const data =
+      await AdminService.getInventorySummary();
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
+
+static async outOfStockProducts(
+  req: Request,
+  res: Response
+) {
+  try {
+    const products =
+      await AdminService.getOutOfStockProducts();
+
+    return res.status(200).json({
+      success: true,
+      data: products,
+    });
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+  }
+}
+
+static async todayStats(
+  req: Request,
+  res: Response
+) {
+  try {
+    const data =
+      await AdminService.getTodayStats();
+
+    return res.status(200).json({
+      success: true,
+      data,
+    });
+
+  } catch (err: any) {
+
+    return res.status(500).json({
+      success: false,
+      message: err.message,
+    });
+
   }
 }
 

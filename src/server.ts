@@ -2,11 +2,9 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import swaggerUi from "swagger-ui-express";
 import { swaggerSpec } from "./docs/swagger";
-
 import { env } from "./config/env";
 import logger from "./config/logger";
 import { errorHandler } from "./middleware/error.middleware";
-
 // Routes
 import authRoutes from "./modules/auth/auth.routes";
 import userRoutes from "./modules/user/user.routes";
@@ -25,7 +23,7 @@ import shippingRoutes from "./modules/shipping/shipping.routes";
 import categoryRoutes from "./modules/category/category.routes";
 import bannerRoutes from "./modules/banner/banner.routes";
 import notificationRoutes from "./modules/notification/notification.routes";
-// import wishlistRoutes from "./modules/wishlist/wishlist.routes";
+import searchRoutes from "./modules/search/search.routes";
 
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
@@ -89,6 +87,7 @@ app.use("/api/shipping", shippingRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/banners", bannerRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/search",searchRoutes);
 // app.use("/api/wishlist",wishlistRoutes);
 /**
  * Global Error Handler

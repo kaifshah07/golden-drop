@@ -77,6 +77,74 @@ export class AdminService {
         totalRevenue._sum.amount || 0,
     };
   }
+
+  static async getTodayStats() {
+  const today = new Date();
+
+  today.setHours(0, 0, 0, 0);
+
+  const tomorrow = new Date(today);
+
+  tomorrow.setDate(today.getDate() + 1);
+
+  const [
+    todayOrders,
+    todayRevenue,
+    todayUsers,
+    pendingPayments,
+  ] = await Promise.all([
+    prisma.order.count({
+      where: {
+        createdAt: {
+          gte: today,
+          lt: tomorrow,
+        },
+      },
+    }),
+
+    prisma.payment.aggregate({
+      where: {
+        paymentStatus: "PAID",
+        createdAt: {
+          gte: today,
+          lt: tomorrow,
+        },
+      },
+
+      _sum: {
+        amount: true,
+      },
+    }),
+
+    prisma.user.count({
+      where: {
+        createdAt: {
+          gte: today,
+          lt: tomorrow,
+        },
+      },
+    }),
+
+    prisma.payment.count({
+      where: {
+        paymentStatus: "PENDING",
+      },
+    }),
+  ]);
+
+  return {
+    todayOrders,
+
+    todayRevenue: Number(
+      todayRevenue._sum.amount || 0
+    ),
+
+    todayUsers,
+
+    pendingPayments,
+  };
+}
+
   static async getRecentOrders() {
   return prisma.order.findMany({
     take: 10,
@@ -232,24 +300,71 @@ static async getMonthlySales() {
   return result;
 }
 
-static async getAllUsers() {
-  return prisma.user.findMany({
-    orderBy: {
-      createdAt: "desc",
-    },
+static async getAllUsers(
+  page: number = 1,
+  limit: number = 10,
+  search?: string
+) {
+  const skip = (page - 1) * limit;
 
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      mobile: true,
-      role: true,
-      isVerified: true,
-      createdAt: true,
+  const where = search
+    ? {
+        OR: [
+          {
+            name: {
+              contains: search,
+            },
+          },
+          {
+            email: {
+              contains: search,
+            },
+          },
+          {
+            mobile: {
+              contains: search,
+            },
+          },
+        ],
+      }
+    : {};
+
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      skip,
+      take: limit,
+
+      orderBy: {
+        createdAt: "desc",
+      },
+
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        mobile: true,
+        role: true,
+        isVerified: true,
+        createdAt: true,
+      },
+    }),
+
+    prisma.user.count({
+      where,
+    }),
+  ]);
+
+  return {
+    users,
+    pagination: {
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
     },
-  });
+  };
 }
-
 static async getUserById(userId: number) {
   return prisma.user.findUnique({
     where: {
@@ -374,8 +489,22 @@ static async updatePaymentStatus(
   });
 }
 
-static async getSalesReport() {
+static async getSalesReport(
+  from?: string,
+  to?: string
+) {
+  const where: any = {};
+
+  if (from && to) {
+    where.createdAt = {
+      gte: new Date(from),
+      lte: new Date(to),
+    };
+  }
+
   return prisma.order.findMany({
+    where,
+
     orderBy: {
       createdAt: "desc",
     },
@@ -390,10 +519,19 @@ static async getSalesReport() {
       },
 
       payment: true,
+
+      items: {
+        include: {
+          productVariant: {
+            include: {
+              product: true,
+            },
+          },
+        },
+      },
     },
   });
 }
-
 static async getCustomerReport() {
   return prisma.user.findMany({
     include: {
@@ -422,5 +560,99 @@ static async getProductReport() {
   });
 }
 
+static async exportUsers() {
+
+    return prisma.user.findMany({
+
+        orderBy:{
+            createdAt:"desc"
+        }
+
+    });
+
+}
+
+static async exportProducts(){
+
+    return prisma.product.findMany({
+
+        include:{
+            category:true
+        }
+
+    });
+
+}
+
+static async exportOrders(){
+
+    return prisma.order.findMany({
+
+        include:{
+
+            user:true,
+
+            payment:true
+
+        }
+
+    });
+
+}
+
+static async getOutOfStockProducts() {
+  return prisma.productVariant.findMany({
+    where: {
+      stock: 0,
+    },
+    include: {
+      product: true,
+    },
+    orderBy: {
+      updatedAt: "desc",
+    },
+  });
+}
+
+static async getInventorySummary() {
+  const [
+    totalVariants,
+    inStock,
+    lowStock,
+    outOfStock,
+  ] = await Promise.all([
+    prisma.productVariant.count(),
+
+    prisma.productVariant.count({
+      where: {
+        stock: {
+          gt: 10,
+        },
+      },
+    }),
+
+    prisma.productVariant.count({
+      where: {
+        stock: {
+          gt: 0,
+          lte: 10,
+        },
+      },
+    }),
+
+    prisma.productVariant.count({
+      where: {
+        stock: 0,
+      },
+    }),
+  ]);
+
+  return {
+    totalVariants,
+    inStock,
+    lowStock,
+    outOfStock,
+  };
+}
 
 }

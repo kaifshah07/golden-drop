@@ -1,6 +1,9 @@
 import { prisma } from "../../prisma/client";
 import { AppError } from "../../utils/AppError";
 import { CouponService } from "../coupon/coupon.service";
+import { sendEmail } from "../../utils/email";
+import { orderPlacedTemplate } from "../../templates/orderPlaced";
+import { orderDeliveredTemplate } from "../../templates/orderDelivered";
 
 export class OrderService {
 
@@ -130,6 +133,29 @@ export class OrderService {
   },
 });
 
+const customer = await prisma.user.findUnique({
+    where:{
+        id: order.userId
+    }
+});
+
+if(customer){
+
+    await sendEmail(
+
+        customer.email,
+
+        "Order Placed Successfully",
+
+        orderPlacedTemplate(
+            customer.name,
+            order.orderNumber
+        )
+
+    );
+
+}
+
     return order;
   }
 
@@ -229,6 +255,31 @@ export class OrderService {
     ) {
       throw new AppError("Order cannot be cancelled", 400);
     }
+    if (status === "DELIVERED") {
+
+    const customer = await prisma.user.findUnique({
+        where:{
+            id: order.userId
+        }
+    });
+
+    if(customer){
+
+        await sendEmail(
+
+            customer.email,
+
+            "Order Delivered",
+
+            orderDeliveredTemplate(
+                customer.name,
+                order.orderNumber
+            )
+
+        );
+
+    }
+}
 
     return prisma.order.update({
       where: {

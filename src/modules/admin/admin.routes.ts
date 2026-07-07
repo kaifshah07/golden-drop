@@ -12,6 +12,13 @@ router.get(
   AdminController.dashboard
 );
 router.get(
+  "/today-stats",
+  authenticate,
+  authorize(["ADMIN"]),
+  AdminController.todayStats
+);
+
+router.get(
   "/recent-orders",
   authenticate,
   authorize(["ADMIN"]),
@@ -114,5 +121,40 @@ router.get(
   authenticate,
   authorize(["ADMIN"]),
   AdminController.productReport
+);
+
+router.get(
+"/export/users",
+authenticate,
+authorize(["ADMIN"]),
+AdminController.exportUsers
+);
+
+router.get(
+"/export/products",
+authenticate,
+authorize(["ADMIN"]),
+AdminController.exportProducts
+);
+
+router.get(
+"/export/orders",
+authenticate,
+authorize(["ADMIN"]),
+AdminController.exportOrders
+);
+
+router.get(
+  "/inventory-summary",
+  authenticate,
+  authorize(["ADMIN"]),
+  AdminController.inventorySummary
+);
+
+router.get(
+  "/out-of-stock",
+  authenticate,
+  authorize(["ADMIN"]),
+  AdminController.outOfStockProducts
 );
 export default router;

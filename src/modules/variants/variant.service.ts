@@ -61,21 +61,44 @@ export class VariantService {
     });
   }
 
-  // 🔄 UPDATE STOCK
-  static async updateStock(variantId: number, stock: number) {
-    const variant = await prisma.productVariant.findUnique({
-      where: { id: BigInt(variantId) },
-    });
+ // 🔄 UPDATE STOCK
+static async updateStock(variantId: number, stock: number) {
+  const variant = await prisma.productVariant.findUnique({
+    where: { id: BigInt(variantId) },
+  });
 
-    if (!variant) {
-      throw new AppError("Variant not found", 404);
-    }
-
-    return prisma.productVariant.update({
-      where: { id: BigInt(variantId) },
-      data: { stock },
-    });
+  if (!variant) {
+    throw new AppError("Variant not found", 404);
   }
+
+  const updatedVariant = await prisma.productVariant.update({
+    where: {
+      id: BigInt(variantId),
+    },
+    data: {
+      stock,
+    },
+  });
+
+  if (stock <= 10) {
+    const admin = await prisma.user.findFirst({
+      where: { role: "ADMIN" },
+    });
+
+    if (admin) {
+      await prisma.notification.create({
+        data: {
+          userId: admin.id,
+          title: "Low Stock Alert",
+          message: `${updatedVariant.sku} has only ${stock} items remaining.`,
+          isRead: false,
+        },
+      });
+    }
+  }
+
+  return updatedVariant;
+}
 
   // 📉 DECREASE STOCK (used later in orders)
   static async decreaseStock(variantId: number, quantity: number) {
