@@ -64,7 +64,7 @@ export class ReviewService {
       throw new Error("Review not found");
     }
 
-    if (review.userId !== userId) {
+    if (review.userId !== BigInt(userId)) {
       throw new Error("Not authorized");
     }
 
