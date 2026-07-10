@@ -7,6 +7,8 @@ import { orderDeliveredTemplate } from "../../templates/orderDelivered";
 
 export class OrderService {
 
+  
+
   // 🛒 CREATE ORDER (WITH COUPON SUPPORT)
   static async createOrder(userId: number, data?: any) {
 
@@ -255,31 +257,31 @@ if(customer){
     ) {
       throw new AppError("Order cannot be cancelled", 400);
     }
-    if (status === "DELIVERED") {
+//     if (status === "DELIVERED") {
 
-    const customer = await prisma.user.findUnique({
-        where:{
-            id: order.userId
-        }
-    });
+//     const customer = await prisma.user.findUnique({
+//         where:{
+//             id: order.userId
+//         }
+//     });
 
-    if(customer){
+  //     if(customer){
 
-        await sendEmail(
+//         await sendEmail(
 
-            customer.email,
+//             customer.email,
 
-            "Order Delivered",
+//             "Order Delivered",
 
-            orderDeliveredTemplate(
-                customer.name,
-                order.orderNumber
-            )
+//             orderDeliveredTemplate(
+//                 customer.name,
+//                 order.orderNumber
+//             )
 
-        );
+//         );
 
-    }
-}
+//     }
+// }
 
     return prisma.order.update({
       where: {

@@ -1,7 +1,10 @@
 import { prisma } from "../../config/prisma";
 
 export class CheckoutService {
-  static async createCheckout(userId: number, addressId: number) {
+  static async createCheckout(
+  userId: bigint,
+  addressId: bigint
+) {
     // 1. Get cart
     const cart = await prisma.cart.findFirst({
       where: { userId },
@@ -31,6 +34,16 @@ export class CheckoutService {
       throw new Error("Invalid address");
     }
 
+
+    for (const item of cart.items) {
+  if (item.productVariant.stock < item.quantity) {
+    throw new Error(
+      `${item.productVariant.product.name} is out of stock`
+    );
+  }
+}
+
+
     // 3. Calculate totals
     let subtotal = 0;
 
@@ -58,22 +71,32 @@ export class CheckoutService {
     // 5. Create order
     const order = await prisma.order.create({
       data: {
-        orderNumber,
-        userId,
-        addressId,
-
-        subtotal,
-        shippingCharge,
-        discount,
-        totalAmount,
-
-        paymentStatus: "PENDING",
-        orderStatus: "PENDING",
-
-        items: {
-          create: orderItems,
+          orderNumber,
+              
+          user: {
+            connect: {
+              id: BigInt(userId),
+            },
+          },
+        
+          address: {
+            connect: {
+              id: BigInt(addressId),
+            },
+          },
+        
+          subtotal,
+          shippingCharge,
+          discount,
+          totalAmount,
+        
+          paymentStatus: "PENDING",
+          orderStatus: "PENDING",
+        
+          items: {
+            create: orderItems,
+          },
         },
-      },
       include: {
         items: true,
       },

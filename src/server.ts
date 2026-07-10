@@ -24,12 +24,20 @@ import categoryRoutes from "./modules/category/category.routes";
 import bannerRoutes from "./modules/banner/banner.routes";
 import notificationRoutes from "./modules/notification/notification.routes";
 import searchRoutes from "./modules/search/search.routes";
+import cors from "cors";// this is temporary
 
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
 };
 
 const app = express();
+// this is temporary
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 
 /**
  * Razorpay Webhook

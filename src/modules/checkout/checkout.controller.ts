@@ -3,11 +3,17 @@ import { CheckoutService } from "./checkout.service";
 
 export class CheckoutController {
   static async create(req: any, res: Response) {
-    try {
-      const userId = req.user.id;
-      const { addressId } = req.body;
 
-      const order = await CheckoutService.createCheckout(userId, addressId);
+    // console.log(req.user);
+    try {
+      const userId = BigInt(req.user.userId);
+      const addressId = BigInt(req.body.addressId);
+
+      const order =
+  await CheckoutService.createCheckout(
+    userId,
+    addressId
+  );
 
       return res.status(201).json({
         success: true,

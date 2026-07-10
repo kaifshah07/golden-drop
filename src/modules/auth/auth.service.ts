@@ -184,4 +184,22 @@ export class AuthService {
 
     return true
   }
+
+  // 👤 GET PROFILE
+static async getProfile(userId: string) {
+  return prisma.user.findUnique({
+    where: {
+      id: BigInt(userId),
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      mobile: true,
+      role: true,
+      isVerified: true,
+      createdAt: true,
+    },
+  });
+}
 }

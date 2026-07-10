@@ -153,4 +153,23 @@ export class AuthController {
       });
     }
   }
+
+  // 👤 PROFILE
+static async profile(req: Request, res: Response) {
+  try {
+    const userId = (req.user as any).userId;
+
+    const user = await AuthService.getProfile(userId);
+
+    return res.json({
+      success: true,
+      data: user,
+    });
+  } catch (error: any) {
+    return res.status(401).json({
+      success: false,
+      message: error.message,
+    });
+  }
+}
 }

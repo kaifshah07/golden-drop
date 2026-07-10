@@ -8,12 +8,18 @@ import { paymentSuccessTemplate } from "../../templates/paymentSuccess";
 
 export class PaymentService {
 
-  /**
-   * ======================================================
-   * CREATE PAYMENT ORDER
-   * ======================================================
-   */
-  static async createPaymentOrder(orderId: bigint) {
+/**
+ * ======================================================
+ * CREATE PAYMENT ORDER
+ * ======================================================
+ */
+static async createPaymentOrder(orderId: bigint) {
+
+  try {
+
+    console.log("======================================");
+    console.log("PAYMENT ORDER API START");
+    console.log("Received Order ID:", orderId.toString());
 
     const order = await prisma.order.findUnique({
       where: {
@@ -21,9 +27,14 @@ export class PaymentService {
       },
     });
 
+    console.log("Fetched Order:");
+    console.log(order);
+
     if (!order) {
       throw new AppError("Order not found", 404);
     }
+
+    console.log("Checking existing payment...");
 
     if (order.paymentStatus === "PAID") {
       throw new AppError(
@@ -39,12 +50,18 @@ export class PaymentService {
         },
       });
 
-    // Reuse existing pending Razorpay order
+    console.log("Existing Payment:");
+    console.log(existingPayment);
+
+    // Reuse existing pending payment
     if (
       existingPayment &&
       existingPayment.paymentStatus === "PENDING" &&
       existingPayment.transactionId
     ) {
+
+      console.log("Using existing Razorpay Order");
+
       return {
         id: existingPayment.transactionId,
         amount: Number(existingPayment.amount) * 100,
@@ -53,16 +70,37 @@ export class PaymentService {
       };
     }
 
-    const razorpayOrder =
-      await razorpay.orders.create({
-        amount: Math.round(
-          Number(order.totalAmount) * 100
-        ),
-        currency: "INR",
-        receipt: order.orderNumber,
-      });
+    console.log("Creating Razorpay Order...");
+
+    let razorpayOrder;
+
+    try {
+
+      razorpayOrder =
+        await razorpay.orders.create({
+          amount: Math.round(
+            Number(order.totalAmount) * 100
+          ),
+          currency: "INR",
+          receipt: order.orderNumber,
+        });
+
+      console.log("Razorpay Order Created Successfully");
+      console.log(razorpayOrder);
+
+    } catch (error) {
+
+      console.error("======================================");
+      console.error("RAZORPAY ERROR");
+      console.error(error);
+      console.error("======================================");
+
+      throw error;
+    }
 
     if (existingPayment) {
+
+      console.log("Updating existing payment...");
 
       await prisma.payment.update({
         where: {
@@ -74,36 +112,30 @@ export class PaymentService {
           amount: order.totalAmount,
         },
       });
-        const customer = await prisma.user.findUnique({
 
-    where:{
-        id: order.userId
-    }
+      const customer =
+        await prisma.user.findUnique({
+          where: {
+            id: order.userId,
+          },
+        });
 
-});
+      if (customer) {
 
-if(customer){
-
-    await sendEmail(
-
-        customer.email,
-
-        "Payment Successful",
-
-        paymentSuccessTemplate(
-
+        await sendEmail(
+          customer.email,
+          "Payment Successful",
+          paymentSuccessTemplate(
             customer.name,
-
             order.orderNumber
+          )
+        );
 
-        )
-
-    );
-
-}
- 
+      }
 
     } else {
+
+      console.log("Creating payment record...");
 
       await prisma.payment.create({
         data: {
@@ -117,8 +149,21 @@ if(customer){
 
     }
 
+    console.log("Payment Order API Completed Successfully");
+    console.log("======================================");
+
     return razorpayOrder;
+
+  } catch (error) {
+
+    console.error("======================================");
+    console.error("PAYMENT SERVICE ERROR");
+    console.error(error);
+    console.error("======================================");
+
+    throw error;
   }
+}
 
     /**
    * ======================================================

@@ -7,10 +7,14 @@ export class PaymentController {
    * CREATE PAYMENT ORDER
    * ===========================================
    */
+
+  
   static async createOrder(
     req: Request,
     res: Response
   ) {
+    console.log("Payment API hit");
+  console.log(req.body);
     try {
       const { orderId } = req.body;
 
