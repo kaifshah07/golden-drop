@@ -1,42 +1,64 @@
 import { Request, Response, NextFunction } from "express";
-import logger from "../config/logger";
+import { Prisma } from "@prisma/client";
+import { ZodError } from "zod";
 
-/**
- * Custom Application Error Class
- */
-export class AppError extends Error {
-  statusCode: number;
-  isOperational: boolean;
+import { AppError } from "../utils/AppError";
+import { sendError } from "../utils/apiResponse";
 
-  constructor(message: string, statusCode: number) {
-    super(message);
-
-    this.statusCode = statusCode;
-    this.isOperational = true;
-
-    Error.captureStackTrace(this, this.constructor);
-  }
-}
-
-/**
- * Async Handler Wrapper
- * Eliminates try-catch in controllers
- */
-export const asyncHandler =
-  (fn: Function) =>
-  (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-
-/**
- * Global Error Handler Middleware
- */
-export const errorHandler = (err: any, req: any, res: any, next: any) => {
+export const errorHandler = (
+  err: any,
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   console.error(err);
 
-  return res.status(err.statusCode || 500).json({
-    success: false,
-    message: err.message || "Internal Server Error",
-    data: null,
+  // Custom App Errors
+  if (err instanceof AppError) {
+    return sendError(res, {
+      message: err.message,
+      statusCode: err.statusCode,
+    });
+  }
+
+  // Prisma Known Errors
+  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+    switch (err.code) {
+      case "P2002":
+        return sendError(res, {
+          message: "Duplicate value found.",
+          statusCode: 409,
+        });
+
+      case "P2025":
+        return sendError(res, {
+          message: "Record not found.",
+          statusCode: 404,
+        });
+
+      default:
+        return sendError(res, {
+          message: "Database error.",
+          statusCode: 500,
+        });
+    }
+  }
+
+  // Validation Errors
+  if (err instanceof ZodError) {
+    return sendError(res, {
+      message: "Validation failed",
+      errors: err.issues,
+      statusCode: 400,
+    });
+  }
+
+  // Unknown Errors
+  return sendError(res, {
+    message:
+      process.env.NODE_ENV === "production"
+        ? "Internal Server Error"
+        : err.message,
+    statusCode: 500,
   });
 };
