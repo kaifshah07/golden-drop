@@ -1,4 +1,4 @@
-import { prisma } from "../../prisma/client";
+import { prisma } from "../../config/prisma";
 import { AppError } from "../../utils/AppError";
 import { CouponService } from "../coupon/coupon.service";
 import { sendEmail } from "../../utils/email";

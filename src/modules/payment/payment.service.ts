@@ -1,5 +1,5 @@
 import crypto from "crypto";
-import { prisma } from "../../prisma/client";
+import { prisma } from "../../config/prisma";
 import { razorpay } from "../../config/razorpay";
 import { env } from "../../config/env";
 import { AppError } from "../../utils/AppError";

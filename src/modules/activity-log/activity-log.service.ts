@@ -1,4 +1,4 @@
-import { prisma } from "../../prisma/client";
+import { prisma } from "../../config/prisma";
 
 interface LogInput {
   adminId: number;

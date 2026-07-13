@@ -1,4 +1,4 @@
-import { prisma } from "../../prisma/client";
+import { prisma } from "../../config/prisma";
 
 export class AdminService {
   static async getDashboard() {

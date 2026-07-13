@@ -1,4 +1,4 @@
-import { prisma } from "../../prisma/client";
+import { prisma } from "../../config/prisma";
 
 export class SearchService {
   static async search(query: string) {

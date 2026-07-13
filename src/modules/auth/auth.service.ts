@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { prisma } from "../../prisma/client";
+import { prisma } from "../../config/prisma";
 import {
   generateAccessToken,
   generateRefreshToken,
